@@ -1,0 +1,26 @@
+.anxp-widget-footer {
+    display: block;
+    padding: 10px;
+    background: #000000 url(http://www.anxiouspenguin.com/assets/images/header-anxious-penguin-pattern.png) center center repeat;
+    border: 1px solid #000000;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    font-size: 0;
+    color: #a0a5aa;
+    color: rgba(240, 245, 250, 0.6);
+    text-align: center;
+    line-height: 0;
+}
+
+    .anxp-widget-footer span {
+        display: inline-block;
+        width: 181px;
+        height: 150px;
+        background: transparent url(http://www.anxiouspenguin.com/assets/images/header-anxious-penguin-logo.png) center center no-repeat;
+        background-size: 100% auto;
+    }
+    
+    /*.anxp-widget-footer:hover {
+        background: #191e23;
+    }*/
