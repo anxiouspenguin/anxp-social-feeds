@@ -97,13 +97,9 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
     public function update($new_instance, $old_instance) {
         $instance = array();
         $instance['title'] = $new_instance['title'];
-        //$instance['consumer_key'] = $new_instance['consumer_key'];
         $instance['consumer_key'] = encrypt_decrypt('encrypt', $new_instance['consumer_key']);
-        //$instance['consumer_secret'] = $new_instance['consumer_secret'];
         $instance['consumer_secret'] = encrypt_decrypt('encrypt', $new_instance['consumer_secret']);
-        //$instance['access_token'] = $new_instance['access_token'];
         $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
-        //$instance['access_token_secret'] = $new_instance['access_token_secret'];
         $instance['access_token_secret'] = encrypt_decrypt('encrypt', $new_instance['access_token_secret']);
         $instance['username'] = $new_instance['username'];
         $instance['limit'] = $new_instance['limit'];
@@ -144,6 +140,7 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
     }
     
     private function twitter_tweets_by_user($consumer_key, $consumer_secret, $access_token, $access_token_secret, $username, $limit) {
+        $limit = ($limit + 2); // in case there's replies, let's boost the limit and then break below
         $cache = ANXPSF_DIR . 'cache/twitter.txt';
         
         clearstatcache();
@@ -158,21 +155,16 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
             
             $twitter = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET);
             $twitter->ssl_verifypeer = FALSE;
-            $tweets_data = $twitter->get('statuses/user_timeline', array('screen_name' => $username, 'exclude_replies' => 'true', 'include_rts' => 'true', 'count' => $limit));
+            $tweets_data = $twitter->get('statuses/user_timeline', array('screen_name' => $username, 'exclude_replies' => TRUE, 'include_rts' => FALSE, 'count' => $limit));
             $tweets = '';
             
             if(!empty($tweets_data)) {
+                $count = 1;
+
                 foreach($tweets_data as $data) {
-                    //$tweetText = $data['text'];
-                    //$tweetText = preg_replace("/(http://|(www.))(([^s<]{4,68})[^s<]*)/", '<a href="http://$2$3" target="_blank">$1$2$4</a>', $tweetText); // linkify links
-                    //$tweetText = preg_replace("/@(w+)/", '<a href="http://www.twitter.com/$1" target="_blank">@$1</a>', $tweetText); // linkify mentions
-                    //$tweetText = preg_replace("/#(w+)/", '<a href="http://search.twitter.com/search?q=$1" target="_blank">#$1</a>', $tweetText); // linkify tags
-                    
-                    //$tweets .= '<li><a class="flaticon-twitter1" href="https://twitter.com/' . $username . '/status/' . $data['id_str'] . '" target="_blank"><span>@' . $username . ':</span> ' . $data['text'] . '</a></li>';
-                    
                     $date = DateTime::createFromFormat('D M d H:i:s O Y', $data['created_at']);
                     $date_fix = sprintf( '%s ' . __( 'ago' ), human_time_diff($date->format('U')));
-                    
+
                     $tweets .= '<li>
                         <a href="https://twitter.com/' . $username . '/status/' . $data['id_str'] . '" target="_blank">
                             <span class="tweet">
@@ -181,6 +173,10 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
                             <span class="date">' . $date_fix . '</span>
                         </a>
                     </li>';
+
+                    if($count == $limit) { break; }
+                    
+                    $count ++;
                 }
                 
                 $file = fopen($cache, 'w');
@@ -247,7 +243,6 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
     public function update($new_instance, $old_instance) {
         $instance = array();
         $instance['title'] = $new_instance['title'];
-        //$instance['access_token'] = $new_instance['access_token'];
         $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
         $instance['user_id'] = $new_instance['user_id'];
         $instance['limit'] = $new_instance['limit'];
@@ -305,7 +300,6 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
             if(!isset($data->error)) {
                 foreach($data->data as $item) {
                     $item_description = (!isset($item->message)) ? 'No description.' : strip_tags($item->message);
-                    //$item_description = mb_strimwidth($item_description, 0, 137, '...');
                     
                     $items .= '<li><a href="' . $item->link . '" target="_blank">' . $item_description . '</a></li>';
                     
@@ -345,8 +339,8 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
     public function form($instance) {
         $instance = wp_parse_args((array) $instance, array('title' => ''));
         $title = $instance['title'];
-        $client_id = $instance['client_id'];
-        $client_id = encrypt_decrypt('decrypt', $client_id);
+        $access_token = $instance['access_token'];
+        $access_token = encrypt_decrypt('decrypt', $access_token);
         $user_id = $instance['user_id'];
         $limit = $instance['limit']; ?>
         
@@ -357,8 +351,8 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
             </p>
             <!-- -->
             <p>
-                <label for="<?php echo $this->get_field_id('client_id'); ?>">Client ID:</label>
-                <input id="<?php echo $this->get_field_id('client_id'); ?>" name="<?php echo $this->get_field_name('client_id'); ?>" class="widefat" type="text" value="<?php echo $client_id; ?>" />
+                <label for="<?php echo $this->get_field_id('access_token'); ?>">Access Token:</label>
+                <input id="<?php echo $this->get_field_id('access_token'); ?>" name="<?php echo $this->get_field_name('access_token'); ?>" class="widefat" type="text" value="<?php echo $access_token; ?>" />
             </p>
             <!-- -->
             <p>
@@ -379,8 +373,7 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
     {
         $instance = array();
         $instance['title'] = $new_instance['title'];
-        //$instance['client_id'] = $new_instance['client_id'];
-        $instance['client_id'] = encrypt_decrypt('encrypt', $new_instance['client_id']);
+        $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
         $instance['user_id'] = $new_instance['user_id'];
         $instance['limit'] = $new_instance['limit'];
         
@@ -392,18 +385,18 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
         extract($args);
         
         $title = apply_filters('widget_title', $instance['title']);
-        $client_id = apply_filters('widget_title', $instance['client_id']);
-        $client_id = encrypt_decrypt('decrypt', $client_id);
+        $access_token = apply_filters('widget_title', $instance['access_token']);
+        $access_token = encrypt_decrypt('decrypt', $access_token);
         $user_id = apply_filters('widget_title', $instance['user_id']);
         $limit = apply_filters('widget_title', $instance['limit']);
         
         echo $args['before_widget'];
             echo ($title) ? $args['before_title'] . $title . $args['after_title'] : '';
             
-            if($client_id AND $user_id AND $limit)
+            if($access_token AND $user_id AND $limit)
             {
                 echo '<ul>';
-                    $this->ig_photos_by_user($client_id, $user_id, $limit);
+                    $this->ig_photos_by_user($access_token, $user_id, $limit);
                 echo '</ul>';
             }
             else
@@ -414,9 +407,9 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
         echo $args['after_widget'];
     }
     
-    private function ig_photos_by_user($client_id, $user_id, $limit)
+    private function ig_photos_by_user($access_token, $user_id, $limit)
     {
-        $url = 'https://api.instagram.com/v1/users/' . $user_id . '/media/recent/?client_id=' . $client_id . '&count=' . $limit .'';
+        $url = 'https://api.instagram.com/v1/users/' . $user_id . '/media/recent/?access_token=' . $access_token . '&count=' . $limit .'';
         $cache = ANXPSF_DIR . 'cache/instagram.txt';
         
         clearstatcache();
