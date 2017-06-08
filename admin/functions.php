@@ -157,7 +157,7 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
             define('ACCESS_TOKEN_SECRET', $access_token_secret);
             
             $twitter = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET);
-            $twitter->ssl_verifypeer = TRUE;
+            $twitter->ssl_verifypeer = FALSE;
             $tweets_data = $twitter->get('statuses/user_timeline', array('screen_name' => $username, 'exclude_replies' => 'true', 'include_rts' => 'true', 'count' => $limit));
             $tweets = '';
             
@@ -472,6 +472,7 @@ function encrypt_decrypt($action, $string)
 {
     $output = FALSE;
     
+    // RandomKeygen (https://randomkeygen.com/) is an easy way to randomly generate keys like below
     $encrypt_method = "AES-256-CBC";
     $secret_key = '3D4855D34B42F5669882CE828DD25';
     $secret_iv = '7FCD118F745E1D4CADC6D37FAF931';
