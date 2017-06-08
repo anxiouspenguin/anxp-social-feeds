@@ -3,14 +3,14 @@ defined('ABSPATH') or die('No script kiddies please!');
 
 /**
  * @link              http://www.anxiouspenguin.com/
- * @since             1.0.0
+ * @since             1.0
  * @package           ANXP Social Feeds
  *
  * @wordpress-plugin
  * Plugin Name:       ANXP Social Feeds
  * Plugin URI:        http://www.anxiouspenguin.com/
- * Description:       Twitter, Facebook and Instagram feed widgets.
- * Version:           1.0.0
+ * Description:       Twitter, Facebook and Instagram feed widgets plugin for WordPress.
+ * Version:           1.0
  * Author:            Anxious Penguin
  * Author URI:        http://www.anxiouspenguin.com/
  * License:           MIT License
