@@ -1,10 +1,14 @@
 <?php
+// 
+defined('ABSPATH') or die('No script kiddies please!');
+
 /**
  * admin init
  */
 add_action('admin_init', 'anxpsf_admin_init');
 
-function anxpsf_admin_init() {
+function anxpsf_admin_init()
+{
     // register style
     wp_register_style('anxpsf-style', plugins_url('assets/css/anxpsf-style.css', __FILE__));
     
@@ -15,7 +19,8 @@ function anxpsf_admin_init() {
 /**
  * admin styles
  */
-function anxpsf_admin_styles() {
+function anxpsf_admin_styles()
+{
     wp_enqueue_style('anxpsf-style');
 }
 
@@ -24,7 +29,8 @@ add_action('admin_print_styles-widgets.php', 'anxpsf_admin_styles');
 /**
  * admin scripts
  */
-function anxpsf_admin_scripts() {
+function anxpsf_admin_scripts()
+{
     wp_enqueue_script('anxpsf-script');
 }
 
@@ -33,8 +39,10 @@ add_action('admin_print_scripts-widgets.php', 'anxpsf_admin_scripts');
 /**
  * widget twitter feed
  */
-class ANXP_Twitter_Feed_Widget extends WP_Widget {
-    function ANXP_Twitter_Feed_Widget() {
+class ANXP_Twitter_Feed_Widget extends WP_Widget
+{
+    function ANXP_Twitter_Feed_Widget()
+    {
         $widget_options = array(
             'classname' => 'anxp-twitter-feed',
             'description' => ''
@@ -43,19 +51,20 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
         parent::WP_Widget('anxp-twitter-feed', 'ANXP Twitter Feed', $widget_options);
     }
     
-    public function form($instance) {
+    public function form($instance)
+    {
         $instance = wp_parse_args((array) $instance, array('title' => ''));
-        $title = $instance['title'];
-        $consumer_key = $instance['consumer_key'];
+        $title = esc_attr($instance['title']);
+        $consumer_key = esc_attr($instance['consumer_key']);
         $consumer_key_decrypt = encrypt_decrypt('decrypt', $consumer_key);
-        $consumer_secret = $instance['consumer_secret'];
+        $consumer_secret = esc_attr($instance['consumer_secret']);
         $consumer_secret_decrypt = encrypt_decrypt('decrypt', $consumer_secret);
-        $access_token = $instance['access_token'];
+        $access_token = esc_attr($instance['access_token']);
         $access_token_decrypt = encrypt_decrypt('decrypt', $access_token);
-        $access_token_secret = $instance['access_token_secret'];
+        $access_token_secret = esc_attr($instance['access_token_secret']);
         $access_token_secret_decrypt = encrypt_decrypt('decrypt', $access_token_secret);
-        $username = $instance['username'];
-        $limit = $instance['limit']; ?>
+        $username = esc_attr($instance['username']);
+        $limit = esc_attr($instance['limit']); ?>
         
         <div class="widget-content">
             <p>
@@ -94,33 +103,35 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
         </div>
     <?php }
     
-    public function update($new_instance, $old_instance) {
+    public function update($new_instance, $old_instance)
+    {
         $instance = array();
-        $instance['title'] = $new_instance['title'];
-        $instance['consumer_key'] = encrypt_decrypt('encrypt', $new_instance['consumer_key']);
-        $instance['consumer_secret'] = encrypt_decrypt('encrypt', $new_instance['consumer_secret']);
-        $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
-        $instance['access_token_secret'] = encrypt_decrypt('encrypt', $new_instance['access_token_secret']);
-        $instance['username'] = $new_instance['username'];
-        $instance['limit'] = $new_instance['limit'];
+        $instance['title'] = sanitize_text_field($new_instance['title']);
+        $instance['consumer_key'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['consumer_key']));
+        $instance['consumer_secret'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['consumer_secret']));
+        $instance['access_token'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['access_token']));
+        $instance['access_token_secret'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['access_token_secret']));
+        $instance['username'] = sanitize_text_field($new_instance['username']);
+        $instance['limit'] = sanitize_text_field($new_instance['limit']);
         
         return $instance;
     }
     
-    public function widget($args, $instance) {
+    public function widget($args, $instance)
+    {
         extract($args);
         
-        $title = apply_filters('widget_title', $instance['title']);
-        $consumer_key = apply_filters('widget_title', $instance['consumer_key']);
+        $title = esc_attr($instance['title']);
+        $consumer_key = esc_attr($instance['consumer_key']);
         $consumer_key = encrypt_decrypt('decrypt', $consumer_key);
-        $consumer_secret = apply_filters('widget_title', $instance['consumer_secret']);
+        $consumer_secret = esc_attr($instance['consumer_secret']);
         $consumer_secret = encrypt_decrypt('decrypt', $consumer_secret);
-        $access_token = apply_filters('widget_title', $instance['access_token']);
+        $access_token = esc_attr($instance['access_token']);
         $access_token = encrypt_decrypt('decrypt', $access_token);
-        $access_token_secret = apply_filters('widget_title', $instance['access_token_secret']);
+        $access_token_secret = esc_attr($instance['access_token_secret']);
         $access_token_secret = encrypt_decrypt('decrypt', $access_token_secret);
-        $username = apply_filters('widget_title', $instance['username']);
-        $limit = apply_filters('widget_title', $instance['limit']);
+        $username = esc_attr($instance['username']);
+        $limit = esc_attr($instance['limit']);
         
         echo $args['before_widget'];
             echo ($title) ? $args['before_title'] . $title . $args['after_title'] : '';
@@ -139,13 +150,15 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
         echo $args['after_widget'];
     }
     
-    private function twitter_tweets_by_user($consumer_key, $consumer_secret, $access_token, $access_token_secret, $username, $limit) {
-        $limit = ($limit + 2); // in case there's replies, let's boost the limit and then break below
+    private function twitter_tweets_by_user($consumer_key, $consumer_secret, $access_token, $access_token_secret, $username, $limit)
+    {
+        $limit_boost = 2; // in case there's replies, let's boost the limit and then break below
         $cache = ANXPSF_DIR . 'cache/twitter.txt';
         
         clearstatcache();
         
-        if(filemtime($cache) < (time() - 3600)) {
+        if(filemtime($cache) < (time() - 3600))
+        {
     		require ANXPSF_DIR . 'twitteroauth/TwitterOAuth.php';
             
             define('CONSUMER_KEY', $consumer_key);
@@ -155,21 +168,27 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
             
             $twitter = new TwitterOAuth(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET);
             $twitter->ssl_verifypeer = FALSE;
-            $tweets_data = $twitter->get('statuses/user_timeline', array('screen_name' => $username, 'exclude_replies' => TRUE, 'include_rts' => FALSE, 'count' => $limit));
+            $tweets_data = $twitter->get('statuses/user_timeline', array('screen_name' => $username, 'exclude_replies' => TRUE, 'include_rts' => FALSE, 'count' => ($limit + $limit_boost)));
             $tweets = '';
             
-            if(!empty($tweets_data)) {
+            if(!empty($tweets_data))
+            {
                 $count = 1;
 
-                foreach($tweets_data as $data) {
-                    $date = DateTime::createFromFormat('D M d H:i:s O Y', $data['created_at']);
+                foreach($tweets_data as $data)
+                {
+                    $id = esc_attr($data['id_str']);
+                    $date = esc_attr($data['created_at']);
+                    $date = DateTime::createFromFormat('D M d H:i:s O Y', $date);
                     $date_fix = sprintf( '%s ' . __( 'ago' ), human_time_diff($date->format('U')));
+                    $text = esc_attr($data['text']);
 
                     $tweets .= '<li>
-                        <a href="https://twitter.com/' . $username . '/status/' . $data['id_str'] . '" target="_blank">
-                            <span class="tweet">
-                                <span class="username">@' . $username . ':</span> ' . $data['text'] . '
-                            </span>
+                        <a href="https://twitter.com/' . $username . '/status/' . $id . '" target="_blank">
+                            <div class="tweet">
+                                <span class="username">@' . $username . ':</span>
+                                <span class="text">' . $text . '</span>
+                            </div>
                             <span class="date">' . $date_fix . '</span>
                         </a>
                     </li>';
@@ -184,7 +203,9 @@ class ANXP_Twitter_Feed_Widget extends WP_Widget {
         		fwrite($file, $tweets);
         		fclose($file);
             }
-        } else {
+        }
+        else
+        {
             $tweets = file_get_contents($cache);
         }
         
@@ -197,7 +218,8 @@ add_action('widgets_init', create_function('', 'register_widget("ANXP_Twitter_Fe
 /**
  * widget facebook feed
  */
-class ANXP_Facebook_Feed_Widget extends WP_Widget {
+class ANXP_Facebook_Feed_Widget extends WP_Widget
+{
     function ANXP_Facebook_Feed_Widget() {
         $widget_options = array(
             'classname' => 'anxp-facebook-feed',
@@ -207,13 +229,14 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
         parent::WP_Widget('anxp-facebook-feed', 'ANXP Facebook Feed', $widget_options);
     }
     
-    public function form($instance) {
+    public function form($instance)
+    {
         $instance = wp_parse_args((array) $instance, array('title' => ''));
-        $title = $instance['title'];
-        $access_token = $instance['access_token'];
+        $title = esc_attr($instance['title']);
+        $access_token = esc_attr($instance['access_token']);
         $access_token = encrypt_decrypt('decrypt', $access_token);
-        $user_id = $instance['user_id'];
-        $limit = $instance['limit']; ?>
+        $user_id = esc_attr($instance['user_id']);
+        $limit = esc_attr($instance['limit']); ?>
         
         <div class="widget-content">
             <p>
@@ -240,24 +263,26 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
         </div>
     <?php }
     
-    public function update($new_instance, $old_instance) {
+    public function update($new_instance, $old_instance)
+    {
         $instance = array();
-        $instance['title'] = $new_instance['title'];
-        $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
-        $instance['user_id'] = $new_instance['user_id'];
-        $instance['limit'] = $new_instance['limit'];
+        $instance['title'] = sanitize_text_field($new_instance['title']);
+        $instance['access_token'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['access_token']));
+        $instance['user_id'] = sanitize_text_field($new_instance['user_id']);
+        $instance['limit'] = sanitize_text_field($new_instance['limit']);
         
         return $instance;
     }
     
-    public function widget($args, $instance) {
+    public function widget($args, $instance)
+    {
         extract($args);
         
-        $title = apply_filters('widget_title', $instance['title']);
-        $access_token = apply_filters('widget_title', $instance['access_token']);
+        $title = esc_attr($instance['title']);
+        $access_token = esc_attr($instance['access_token']);
         $access_token = encrypt_decrypt('decrypt', $access_token);
-        $user_id = apply_filters('widget_title', $instance['user_id']);
-        $limit = apply_filters('widget_title', $instance['limit']);
+        $user_id = esc_attr($instance['user_id']);
+        $limit = esc_attr($instance['limit']);
         
         echo $args['before_widget'];
             echo ($title) ? $args['before_title'] . $title . $args['after_title'] : '';
@@ -276,13 +301,15 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
         echo $args['after_widget'];
     }
     
-    private function facebook_feed_by_user($access_token, $user_id, $limit) {
+    private function facebook_feed_by_user($access_token, $user_id, $limit)
+    {
         $url = 'https://graph.facebook.com/v2.4/' . $user_id . '/posts?access_token=' . $access_token . '&fields=id,message,link&limit=' . $limit;
         $cache = ANXPSF_DIR . 'cache/facebook.txt';
         
         clearstatcache();
         
-        if(filemtime($cache) < (time() - 3600)) {
+        if(filemtime($cache) < (time() - 3600))
+        {
             $ch = curl_init($url);
             
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
@@ -297,11 +324,14 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
             $items = '';
             $count = 1;
     
-            if(!isset($data->error)) {
-                foreach($data->data as $item) {
-                    $item_description = (!isset($item->message)) ? 'No description.' : strip_tags($item->message);
+            if(!isset($data->error))
+            {
+                foreach($data->data as $item)
+                {
+                    $item_link = esc_attr($item->link);
+                    $item_description = (!isset($item->message)) ? 'No description.' : esc_attr($item->message);
                     
-                    $items .= '<li><a href="' . $item->link . '" target="_blank">' . $item_description . '</a></li>';
+                    $items .= '<li><a href="' . $item_link . '" target="_blank">' . $item_description . '</a></li>';
                     
                     if($count == $limit) { break; }
                     
@@ -313,7 +343,9 @@ class ANXP_Facebook_Feed_Widget extends WP_Widget {
                 fwrite($file,$items);
                 fclose($file);
             }
-        } else {
+        }
+        else
+        {
             $items = file_get_contents($cache);
         }
         
@@ -326,8 +358,10 @@ add_action('widgets_init', create_function('', 'register_widget("ANXP_Facebook_F
 /**
  * widget instagram feed
  */
-class ANXP_Instagram_Feed_Widget extends WP_Widget {
-    function ANXP_Instagram_Feed_Widget() {
+class ANXP_Instagram_Feed_Widget extends WP_Widget
+{
+    function ANXP_Instagram_Feed_Widget()
+    {
         $widget_options = array(
             'classname' => 'anxp-instagram-feed',
             'description' => ''
@@ -336,13 +370,14 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
         parent::WP_Widget('anxp-instagram-feed', 'ANXP Instagram Feed', $widget_options);
     }
     
-    public function form($instance) {
+    public function form($instance)
+    {
         $instance = wp_parse_args((array) $instance, array('title' => ''));
-        $title = $instance['title'];
-        $access_token = $instance['access_token'];
+        $title = esc_attr($instance['title']);
+        $access_token = esc_attr($instance['access_token']);
         $access_token = encrypt_decrypt('decrypt', $access_token);
-        $user_id = $instance['user_id'];
-        $limit = $instance['limit']; ?>
+        $user_id = esc_attr($instance['user_id']);
+        $limit = esc_attr($instance['limit']); ?>
         
         <div class="widget-content">
             <p>
@@ -372,10 +407,10 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
     public function update($new_instance, $old_instance)
     {
         $instance = array();
-        $instance['title'] = $new_instance['title'];
-        $instance['access_token'] = encrypt_decrypt('encrypt', $new_instance['access_token']);
-        $instance['user_id'] = $new_instance['user_id'];
-        $instance['limit'] = $new_instance['limit'];
+        $instance['title'] = sanitize_text_field($new_instance['title']);
+        $instance['access_token'] = encrypt_decrypt('encrypt', sanitize_text_field($new_instance['access_token']));
+        $instance['user_id'] = sanitize_text_field($new_instance['user_id']);
+        $instance['limit'] = sanitize_text_field($new_instance['limit']);
         
         return $instance;
     }
@@ -384,11 +419,11 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
     {
         extract($args);
         
-        $title = apply_filters('widget_title', $instance['title']);
-        $access_token = apply_filters('widget_title', $instance['access_token']);
+        $title = esc_attr($instance['title']);
+        $access_token = esc_attr($instance['access_token']);
         $access_token = encrypt_decrypt('decrypt', $access_token);
-        $user_id = apply_filters('widget_title', $instance['user_id']);
-        $limit = apply_filters('widget_title', $instance['limit']);
+        $user_id = esc_attr($instance['user_id']);
+        $limit = esc_attr($instance['limit']);
         
         echo $args['before_widget'];
             echo ($title) ? $args['before_title'] . $title . $args['after_title'] : '';
@@ -433,8 +468,10 @@ class ANXP_Instagram_Feed_Widget extends WP_Widget {
             {
                 foreach($media->data as $data)
                 {
-                    //thumbnail
-                    $photos .= '<li><a href="' . $data->link . '" target="_blank"><img src="' . $data->images->low_resolution->url . '" alt="" /></a></li>';
+                    $link = esc_attr($data->link);
+                    $image_low_res_uri = esc_attr($data->images->low_resolution->url);
+
+                    $photos .= '<li><a href="' . $link . '" target="_blank"><img src="' . $image_low_res_uri . '" alt="" /></a></li>';
                     
                     if($count == $limit) { break; }
                     
@@ -488,4 +525,52 @@ function encrypt_decrypt($action, $string)
     
     return $output;
 }
+
+/**
+ * activate
+ */
+function anxpsf_activate()
+{
+    // clear the permalinks after the post type has been registered
+    flush_rewrite_rules();
+}
+
+register_activation_hook(__FILE__, 'anxpsf_activate');
+
+/**
+ * deactivate
+ */
+function anxpsf_deactivate()
+{
+    // clear the permalinks to remove our post type's rules
+    flush_rewrite_rules();
+}
+
+register_deactivation_hook(__FILE__, 'anxpsf_deactivate');
+
+/**
+ * uninstall
+ */
+function anxpsf_uninstall()
+{
+    // if uninstall is not called by WordPress, die
+    if(!defined('WP_UNINSTALL_PLUGIN'))
+    {
+        die;
+    }
+
+    $widget_anxp_twitter_feed = 'widget_anxp-twitter-feed';
+    $widget_anxp_facebook_feed = 'widget_anxp-facebook-feed';
+    $widget_anxp_instagram_feed = 'widget_anxp-instagram-feed';
+
+    delete_option($widget_anxp_twitter_feed);
+    delete_option($widget_anxp_facebook_feed);
+    delete_option($widget_anxp_instagram_feed);
+
+    delete_site_option($widget_anxp_twitter_feed);
+    delete_site_option($widget_anxp_facebook_feed);
+    delete_site_option($widget_anxp_instagram_feed);
+}
+
+register_uninstall_hook(__FILE__, 'anxpsf_uninstall');
 ?>
